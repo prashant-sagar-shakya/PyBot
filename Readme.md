@@ -2,7 +2,7 @@
 
 **PyBot** is an AI-powered chatbot application designed to help users with various queries. Built using Flask, it leverages machine learning models and provides a simple, intuitive interface for users to interact with. With features like recent chats, dynamic responses, and a beautiful UI, PyBot is your go-to assistant for answering any question!
 
-![PyBot Sample](./images/sample.png)
+![PyBot Sample](/sample.png)
 
 ## Features
 

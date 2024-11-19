@@ -55,14 +55,12 @@
         overflow-y: auto;
         border-right: 1px solid rgba(255, 255, 255, 0.1);
       }
-
       .recent-chats h2 {
         margin: 0 0 15px;
         color: #29b6f6;
         font-weight: 600;
         font-size: 1.2rem;
       }
-
       .chat-item {
         background: rgba(255, 255, 255, 0.1);
         padding: 10px;
@@ -72,38 +70,45 @@
         cursor: pointer;
         transition: background-color 0.3s;
       }
-
       .chat-item:hover {
         background: #29b6f6;
         color: #121212;
       }
-
       .chat-window {
         flex: 1;
         display: flex;
         flex-direction: column;
       }
-
       .chat-area {
         flex: 1;
         padding: 20px;
         overflow-y: auto;
         background: rgba(255, 255, 255, 0.05);
       }
-
       .response {
         background: rgba(255, 255, 255, 0.1);
         padding: 15px;
         border-radius: 10px;
         margin-bottom: 10px;
         font-size: 0.95rem;
+        position: relative;
       }
-
       .response.user {
         background: #29b6f6;
         color: #121212;
       }
-
+      .response.editable {
+        cursor: text;
+      }
+      .edit-button {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: transparent;
+        border: none;
+        color: #fff;
+        cursor: pointer;
+      }
       .input-area {
         display: flex;
         gap: 10px;
@@ -111,7 +116,6 @@
         background: rgba(0, 0, 0, 0.8);
         border-top: 1px solid rgba(255, 255, 255, 0.1);
       }
-
       textarea {
         flex: 1;
         height: 50px;
@@ -123,11 +127,9 @@
         background: rgba(255, 255, 255, 0.1);
         color: #fff;
       }
-
       textarea:focus {
         outline: 2px solid #29b6f6;
       }
-
       button {
         background-color: #29b6f6;
         color: #fff;
@@ -138,7 +140,6 @@
         cursor: pointer;
         transition: background-color 0.3s ease;
       }
-
       button:hover {
         background-color: #03a9f4;
       }
@@ -146,8 +147,9 @@
   </head>
   <body>
     <h1>
-      <img  src="https://readme-typing-svg.herokuapp.com/?lines=Welcome +to+ PyBot&size=25&color=ffffff&font=Inter&center=true">
-      <!-- <u>Welcome to PyBot </u> -->
+      <img
+        src="https://readme-typing-svg.herokuapp.com/?lines=Welcome+to+PyBot&size=25&color=ffffff&font=Inter&center=true"
+      />
     </h1>
 
     <div class="container">
@@ -157,7 +159,6 @@
       </div>
       <div class="chat-window">
         <div class="chat-area" id="response-container"></div>
-
         <div class="input-area">
           <textarea id="query" placeholder="Type your query here..."></textarea>
           <button onclick="askPyBot()">Ask PyBot</button>
@@ -168,24 +169,26 @@
     <script>
       const recentChats = [];
 
-      async function askPyBot() {
-        const query = document.getElementById("query").value;
-        const responseContainer = document.getElementById("response-container");
-        const recentChatsContainer = document.getElementById("recent-chats");
-
-        if (!query.trim()) {
+      async function askPyBot(queryText = null) {
+        const query =
+          queryText || document.getElementById("query").value.trim();
+        if (!query) {
           alert("Please enter a query!");
           return;
         }
-        const userMessage = document.createElement("div");
-        userMessage.className = "response user";
-        userMessage.textContent = query;
+
+        const responseContainer = document.getElementById(
+          "response-container"
+        );
+        const recentChatsContainer = document.getElementById("recent-chats");
+
+        const userMessage = createMessage(query, "user");
         responseContainer.appendChild(userMessage);
-        responseContainer.scrollTop = responseContainer.scrollHeight;
         recentChats.unshift(query);
         updateRecentChats(recentChatsContainer);
 
         document.getElementById("query").value = "";
+
         try {
           const res = await fetch("/ask", {
             method: "POST",
@@ -193,29 +196,52 @@
             body: JSON.stringify({ query }),
           });
           const data = await res.json();
-          const botMessage = document.createElement("div");
-          botMessage.className = "response";
-          botMessage.textContent = data.response || `Error: ${data.error}`;
+          const botMessage = createMessage(data.response || `Error: ${data.error}`);
           responseContainer.appendChild(botMessage);
-          responseContainer.scrollTop = responseContainer.scrollHeight;
         } catch (err) {
-          const errorMessage = document.createElement("div");
-          errorMessage.className = "response";
-          errorMessage.textContent = `An error occurred: ${err.message}`;
+          const errorMessage = createMessage(
+            `An error occurred: ${err.message}`
+          );
           responseContainer.appendChild(errorMessage);
-          responseContainer.scrollTop = responseContainer.scrollHeight;
         }
+
+        responseContainer.scrollTop = responseContainer.scrollHeight;
       }
 
       function updateRecentChats(container) {
         container.innerHTML = "";
         recentChats.slice(0, 10).forEach((chat) => {
-          const chatItem = document.createElement("div");
-          chatItem.className = "chat-item";
-          chatItem.textContent = chat;
+          const chatItem = createMessage(chat, "chat-item");
+          chatItem.onclick = () => askPyBot(chat);
           container.appendChild(chatItem);
         });
       }
+
+      function createMessage(content, className = "response") {
+        const message = document.createElement("div");
+        message.className = `${className} editable`;
+        message.contentEditable = className.includes("user");
+        message.textContent = content;
+
+        if (className === "response user") {
+          const editButton = document.createElement("button");
+          editButton.className = "edit-button";
+          editButton.textContent = "↻";
+          editButton.onclick = (e) => {
+            e.stopPropagation();
+            askPyBot(message.textContent.trim());
+          };
+          message.appendChild(editButton);
+        }
+        return message;
+      }
+
+      document.getElementById("query").addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          askPyBot();
+        }
+      });
     </script>
   </body>
 </html>
